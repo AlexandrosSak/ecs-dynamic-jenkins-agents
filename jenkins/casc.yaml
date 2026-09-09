@@ -1,0 +1,87 @@
+jenkins:
+  crumbIssuer:
+    standard:
+      excludeClientIPFromCrumb: true
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "admin"
+          password: "${JENKINS_ADMIN_PASSWORD}"
+  authorizationStrategy:
+    globalMatrix:
+      permissions:
+        - "USER:Overall/Administer:admin"
+  log:
+    recorders:
+      - loggers:
+          - level: "CONFIG"
+            name: "jenkins.plugins.slack"
+        name: "plugin_slack"
+  mode: EXCLUSIVE
+  numExecutors: 1
+  labelString: "controller"
+  clouds:
+    - eC2Fleet:
+        addNodeOnlyIfRunning: false
+        alwaysReconnect: false
+        cloudStatusIntervalSec: 10
+        computerConnector:
+          sSHConnector:
+            credentialsId: "jenkins-agent-ssh-key"
+            launchTimeoutSeconds: 60
+            maxNumRetries: 10
+            port: 22
+            retryWaitTime: 15
+            sshHostKeyVerificationStrategy: "nonVerifyingKeyVerificationStrategy"
+        disableTaskResubmit: false
+        fleet: "jenkins_agents"
+        idleMinutes: 0
+        initOnlineCheckIntervalSec: 15
+        initOnlineTimeoutSec: 180
+        labelString: "ec2-fleet"
+        maxSize: 6
+        maxTotalUses: -1
+        minSize: 0
+        minSpareSize: 0
+        name: "Dev-Fleet"
+        noDelayProvision: false
+        numExecutors: 1
+        privateIpUsed: true
+        region: "eu-west-1"
+        restrictUsage: false
+        scaleExecutorsByWeight: false
+
+security:
+  gitHostKeyVerificationConfiguration:
+    sshHostKeyVerificationStrategy:
+      manuallyProvidedKeyVerificationStrategy:
+        approvedHostKeys: |-
+          bitbucket.org ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDQeJzhupRu0u0cdegZIa8e86EG2qOCsIsD1Xw0xSeiPDlCr7kq97NLmMbpKTX6Esc30NuoqEEHCuc7yWtwp8dI76EEEB1VqY9QJq6vk+aySyboD5QF61I/1WeTwu+deCbgKMGbUijeXhtfbxSxm6JwGrXrhBdofTsbKRUsrN1WoNgUa8uqN1Vx6WAJw1JHPhglEGGHea6QICwJOAr/6mrui/oB7pkaWKHj3z7d1IC4KWLtY47elvjbaTlkN04Kc/5LFEirorGYVbt15kAUlqGM65pk6ZBxtaO3+30LVlORZkxOh+LKL/BvbZ/iRNhItLqNyieoQj/uh/7Iv4uyH/cV/0b4WDSd3DptigWq84lJubb9t/DnZlrJazxyDCulTmKdOR7vs9gMTo+uoIrPSb8ScTtvw65+odKAlBj59dhnVp9zd7QUojOpXlL62Aw56U4oO+FALuevvMjiWeavKhJqlR7i5n9srYcrNV7ttmDw7kf/97P5zauIhxcjX+xHv4M=
+
+unclassified:
+  location:
+    url: "https://jenkins-controller.company.net:8080"
+  slackNotifier:
+    botUser: false
+    sendAsText: false
+    teamDomain: "company"
+    tokenCredentialId: "slack-token"
+
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - basicSSHUserPrivateKey:
+              scope: GLOBAL
+              id: bitbucket_infrastructure_ssh_key
+              username: git
+              description: "Bitbucket SSH Key for Infrastructure Repositories"
+              privateKeySource:
+                directEntry:
+                  privateKey: "$${readFile:/var/lib/jenkins/secrets/bitbucket_infrastructure}"
+          - string:
+              scope: GLOBAL
+              id: "slack-token"
+              secret: "$${readFile:/var/lib/jenkins/secrets/slack}"
+              description: "Slack Notification Webhook Token"
